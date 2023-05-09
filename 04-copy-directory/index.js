@@ -1,26 +1,25 @@
 
-const fs = require('fs');
+const { copyFile, readdir, mkdir, unlink } = require('fs/promises');
 const path = require('path');
-const fsPromises = fs.promises;
-const copyFile = fsPromises.copyFile;
 
-(function copyDir() {
-    fs.mkdir(path.join(__dirname, 'files-copy'), {
-        recursive: true,
-    }, err => {
-        if (err) {
-            throw new Error('Folder already exists!')
+const pathSourceFolder = path.join(__dirname, 'files');
+const pathCopyFolder = path.join(__dirname, 'files-copy');
+
+async function copyDir() {
+    await mkdir(pathCopyFolder, { recursive: true });
+
+    const sourceFiles = await readdir(pathSourceFolder);
+    const copyFiles = await readdir(pathCopyFolder);
+
+    copyFiles.forEach(async file => {
+        if (sourceFiles.indexOf(file) === -1) {
+            await unlink(path.join(pathCopyFolder, file));
         }
-        console.log('Folder created!');
     });
 
-    fsPromises.readdir(path.join(__dirname, 'files'))
-        .then(files => {
-            files.forEach(file => {
-                const filePath = path.join(__dirname, 'files', file);
-                const copyPath = path.join(__dirname, 'files-copy', file);
-                copyFile(filePath, copyPath);
-                console.log(file);
-            });
-        });
-})();
+    sourceFiles.forEach(async file => {
+        await copyFile(path.join(pathSourceFolder, file), path.join(pathCopyFolder, file));
+    });
+}
+
+copyDir();
